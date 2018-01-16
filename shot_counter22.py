@@ -109,7 +109,7 @@ def count_shots(data, pattern, filename):
 	# conditional_show()
 	plt.clf()
 
-
+	autocorr = autocorr.reshape(-1, 1)
 	norm_autocorr = normalize_df(autocorr)
 	plt.plot(norm_autocorr)
 	plt.gcf().canvas.set_window_title(filename + " normalized autocorrelation")
@@ -163,7 +163,6 @@ def count_shots(data, pattern, filename):
 	plt.plot(norm_autocorr, marker='p', markevery=markers)
 	plt.gcf().canvas.set_window_title(filename + " shots")
 	conditional_show()
-	plt.savefig("data_auto_peak_lows_smoothed_5", ext="png", close=False, verbose=True)
 	plt.clf()
 	print("Predicting %d shots for %s" % (len(markers), filename))
 	return len(markers)
