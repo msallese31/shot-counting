@@ -15,30 +15,66 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 cond_show=False
 
-pattern = pd.read_csv('5shots2.txt')
+# X pattern
+pattern_file = pd.read_csv('5shots2.txt')
 patt_start = 465
 patt_end = 511
 
-correlation_threshold = 60
-marker_distance_threshold = 100
+# Z pattern
+# pattern_file = pd.read_csv('5shots4.txt')
+# patt_start = 494
+# patt_end = 634
+
+correlation_threshold = 50
+marker_distance_threshold = 200
 counted_shots = 0
 expected_shots_count = 32
 
 def main():
 	global counted_shots
-	global pattern
-	xs_pattern = get_x_data(pattern)
 
+	# X pattern
+	pattern_file = pd.read_csv('5shots2.txt')
+	patt_start = 465
+	patt_end = 511
+	counted_shots = 0
+	predict_axis('x')
+	x_counted_shots = counted_shots
+	print("Axis X; Counted %d shots; Expected: %d" % (counted_shots, expected_shots_count))
+
+	# Y pattern
+	pattern_file = pd.read_csv('5shots4.txt')
+	patt_start = 1993
+	patt_end = 2050
+	counted_shots = 0
+	predict_axis('y')
+	y_counted_shots = counted_shots
+	print("Axis: Y; Counted %d shots; Expected: %d" % (counted_shots, expected_shots_count))
+
+	# Z pattern
+	pattern_file = pd.read_csv('5shots4.txt')
+	patt_start = 494
+	patt_end = 634
+	counted_shots = 0
+	predict_axis('z')
+	z_counted_shots = counted_shots
+	print("Axis: Z; Counted %d shots; Expected: %d" % (counted_shots, expected_shots_count))
+
+
+
+
+def predict_axis(axis):
+	global pattern_file
+	global counted_shots
+
+	pattern_data = get_data(pattern_file, axis)
+	pattern_data = pattern_data[patt_start:patt_end]
 
 	for filename in glob.iglob('*.txt'):
-		data = pd.read_csv(filename)
-		xs = get_x_data(data)
+		csv_data = pd.read_csv(filename)
+		axis_data = get_data(csv_data, axis)
 		name = filename.split('.')[0]
-		counted_shots = counted_shots + count_shots(xs, xs_pattern, name)
-
-	print("Counted %d shots; Expected: %d" % (counted_shots, expected_shots_count))
-	# rms = sqrt(mean_squared_error(y_actual, y_predicted))
-	# rolling_norm = df_normalized.rolling(5).mean()['pop']
+		counted_shots = counted_shots + count_shots(axis_data, pattern_data, name)
 
 def conditional_show():
 	if cond_show:
@@ -48,8 +84,6 @@ def conditional_show():
 def count_shots(data, pattern, filename):
 	data_df = pd.DataFrame(data)
 	pattern_df = pd.DataFrame(pattern)
-	pattern_df = pattern_df[patt_start:patt_end]
-
 	# pattern_mean = np.mean(pattern[patt_start:patt_end])
 
 	data_outliers = remove_outliers(data_df)
@@ -67,7 +101,7 @@ def count_shots(data, pattern, filename):
 
 	plt.plot(data)
 	plt.gcf().canvas.set_window_title(filename + " raw data")
-	# conditional_show()
+	conditional_show()
 	plt.clf()	
 
 	plt.plot(autocorr)
@@ -134,9 +168,9 @@ def count_shots(data, pattern, filename):
 	print("Predicting %d shots for %s" % (len(markers), filename))
 	return len(markers)
 
-def get_x_data(data):
-	xs = data['x']	
-	return xs
+def get_data(data, axis):
+	ret_data = data[axis]	
+	return ret_data
 
 def normalize_df(df_to_normalize):
 	min_max_scaler = preprocessing.MinMaxScaler()
