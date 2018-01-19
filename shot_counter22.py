@@ -14,6 +14,9 @@ from scipy.signal import butter, lfilter, freqz
 from sklearn import linear_model, datasets
 from sklearn.linear_model import LogisticRegression
 from sklearn import svm
+from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import RandomForestClassifier
+
 
 
 
@@ -352,15 +355,44 @@ def label_data():
 	supp_vec = svm.SVC(gamma=0.001, C=1.)
 	supp_vec.fit(X, Y)
 
+	gnb = GaussianNB()
+	gnb.fit(X, Y)
+
+	rand_for = RandomForestClassifier()
+	rand_for.fit(X, Y)
+
+
+	print("##### SUPPORT VECTOR MACHINE #####")
 	supp_vec_negative = supp_vec.predict(test_non_patterns)
+	print("Negatives:")
 	print(supp_vec_negative)
 	supp_vec_positive = supp_vec.predict(test_patterns)  
+	print("Positives:")
 	print(supp_vec_positive)
 
-	y_pred_negative = LogReg.predict(test_non_patterns)
+	print("##### GAUSSIAN NAIVE BAYES #####")
+	y_pred_negative = gnb.predict(test_non_patterns)
+	print("Negatives:")
 	print(y_pred_negative)
+	y_pred_positive = gnb.predict(test_patterns)
+	print("Positives:")
+	print(y_pred_positive)
 
+	print("##### RANDOM FOREST #####")
+	y_pred_negative = rand_for.predict(test_non_patterns)
+	print("Negatives:")
+	print(y_pred_negative)
+	y_pred_positive = rand_for.predict(test_patterns)
+	print("Positives:")
+	print(y_pred_positive)
+
+
+	print("##### LOGISTIC REGRESSION #####")
+	y_pred_negative = LogReg.predict(test_non_patterns)
+	print("Negatives:")
+	print(y_pred_negative)
 	y_pred_positive = LogReg.predict(test_patterns)
+	print("Positives:")
 	print(y_pred_positive)
 
 
