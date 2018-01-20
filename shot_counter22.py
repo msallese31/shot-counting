@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import glob
 import warnings
 import math
-from skimage.filter import denoise_tv_chambolle
 from scipy import signal
 from scipy.signal import savgol_filter
 from scipy.signal import butter, lfilter, freqz
@@ -16,6 +15,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import svm
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 
 
 
@@ -105,8 +105,139 @@ def main():
 		print("Axis: Z; Counted %d shots; Expected: %d" % (counted_shots, expected_shots_count))
 
 def log_reg():
-	# numpy_play()
-	label_data()
+	gauss = label_data('g')
+	svm = label_data('s')
+	mlp = label_data('mlp')
+
+	gauss_thresh = 92
+	svm_thresh = 102
+	mlp_thresh = 13
+
+
+	pattern_file = '5shots4.txt'
+	mag = mag_from_file(pattern_file)
+	mag[mag > 90] = 90
+
+	a = np.empty(10000)
+	a[0:100] = 50
+	a[101:250] = 40
+	a[500:700] = 70
+	a = a.reshape(1,-1)
+
+	b = np.random.rand(10000,)
+	b = b.reshape(1,-1)
+	c = np.random.random_integers(100, size=(10000))
+	c = c.reshape(1,-1)
+
+	print("bogus data shot count gauss a: %d" %count_shots_new(a, gauss, gauss_thresh))
+	print("bogus data shot count gauss b: %d" %count_shots_new(b, gauss, gauss_thresh))
+	print("bogus data shot count gauss c: %d" %count_shots_new(c, gauss, gauss_thresh))
+
+	print("bogus data shot count svm a: %d" %count_shots_new(a, svm, svm_thresh))
+	print("bogus data shot count svm b: %d" %count_shots_new(b, svm, svm_thresh))
+	print("bogus data shot count svm c: %d" %count_shots_new(c, svm, svm_thresh))
+
+	print("bogus data shot count mlp a: %d" %count_shots_new(a, mlp, mlp_thresh))
+	print("bogus data shot count mlp b: %d" %count_shots_new(b, mlp, mlp_thresh))
+	print("bogus data shot count mlp c: %d" %count_shots_new(c, mlp, mlp_thresh))
+
+	# print(classifier.predict(a))
+	shot_count = 0
+
+	# Optimal GNB classifier
+	for filename in glob.iglob('*.txt'):
+		mag = mag_from_file(filename)
+		mag = mag.reshape(1,-1)
+		name = filename.split('.')[0]
+		counted_shots = count_shots_new(mag, gauss, gauss_thresh)
+		shot_count += counted_shots
+	print("Shots for gauss: %d" % shot_count)
+	shot_count = 0
+	# Optimal SVN classifier
+	for filename in glob.iglob('*.txt'):
+		mag = mag_from_file(filename)
+		mag = mag.reshape(1,-1)
+		name = filename.split('.')[0]
+		counted_shots = count_shots_new(mag, svm, svm_thresh)
+		shot_count += counted_shots
+	print("Shots for svm: %d" % shot_count)
+
+	shot_count = 0
+	# Optimal MLP classifier
+	for filename in glob.iglob('*.txt'):
+		mag = mag_from_file(filename)
+		mag = mag.reshape(1,-1)
+		name = filename.split('.')[0]
+		counted_shots = count_shots_new(mag, mlp, mlp_thresh)
+		shot_count += counted_shots
+	print("Shots for mlp: %d" % shot_count)
+
+
+	# indexes = build_prediction_list(mag, classifier)
+
+	# print("Number of indexes: %d" % len(indexes))
+	# streaks = countlist(indexes)
+	# print(streaks)
+	# shots = [i for i in streaks if i >= 100]
+	# print(len(shots))
+
+	# plt.plot(mag, marker='p', markevery=indexes)
+	# plt.show()
+
+
+def count_shots_new(mag, classifer, thresh):
+	shot_count = 0
+	indexes = build_prediction_list(mag, classifer)
+	streaks = countlist(indexes)
+	shots = [i for i in streaks if i >= thresh]
+	shot_count += len(shots)
+	return shot_count
+
+
+def build_prediction_list(mag, classifier):
+	i = 0
+	predictions = []
+	indexes = []
+	# print(mag.shape[1])
+	while i < mag.shape[1]:
+		if(i + 100 > mag.shape[1]):
+			break
+		# print("Mag shape:")
+		# print(mag.shape)
+		# print(mag)
+		mag_reshape = mag[:, i:i+100]
+		prediction = classifier.predict(mag_reshape)
+		# print("Prediction for mag[i:i+100]")
+		# print(prediction)
+		predictions.append(prediction)
+		if prediction == 1:
+			indexes.append(i)
+		# print("Index: %d;\n Window: mag[%d:%d];\nClass: %d" % (i, i, i + 100, prediction))
+		i += 1
+	return indexes
+
+def countlist(random_list):
+	count = 0 
+	retlist = []
+	# Avoid IndexError for  random_list[i+1]
+	for i in range(len(random_list) - 1):
+		# Check if the next number is consecutive
+		if random_list[i] + 1 == random_list[i+1]:
+			count += 1
+		else:
+			# If it is not append the count and restart counting
+			retlist.append(count)
+			count = 1
+	# Since we stopped the loop one early append the last count
+	retlist.append(count)
+	return retlist
+
+
+# sigmoid function
+def nonlin(x,deriv=False):
+	if(deriv==True):
+		return x*(1-x)
+	return 1/(1+np.exp(-x))
 
 def numpy_play():
 	iris = datasets.load_iris()
@@ -127,7 +258,7 @@ def numpy_play():
 	d = np.vstack((d, e))
 	print(d)
 
-def label_data():
+def label_data(classifier_return_type):
 	pattern_file = '3shots2.txt'
 	mag = mag_from_file(pattern_file)
 	plt.plot(mag, 'r')
@@ -325,8 +456,8 @@ def label_data():
 	# Held out for test data!
 	# patterns = np.vstack((patterns, p28, p29, p30, p31, p32))
 	test_patterns = np.vstack((p28, p29, p30, p31, p32))
-	print("test patterns shape")
-	print(test_patterns.shape)
+	# print("test patterns shape")
+	# print(test_patterns.shape)
 	
 	np43 = mag7[1:101]
 	np44 = mag7[355:455]
@@ -337,17 +468,18 @@ def label_data():
 	# Held out for test data!
 	# non_patterns = np.vstack((non_patterns, np43, np44, np45, np46, np47))
 	test_non_patterns = np.vstack((np43, np44, np45, np46, np47))
-	print("non test patterns shape")
-	print(test_non_patterns.shape)
+	# print("non test patterns shape")
+	# print(test_non_patterns.shape)
 
 	X = np.vstack((patterns,non_patterns))
-	print(X.shape)
+	# print(X.shape)
 
 	Y = np.zeros(shape=(69,))
+
 	# Y = np.zeros(shape=(79,))
-	print(Y.shape)
+	# print(Y.shape)
 	Y[0:26] = 1
-	print(Y)
+	# print(Y)
 
 	LogReg = LogisticRegression()
 	LogReg.fit(X, Y)
@@ -361,39 +493,59 @@ def label_data():
 	rand_for = RandomForestClassifier()
 	rand_for.fit(X, Y)
 
-
-	print("##### SUPPORT VECTOR MACHINE #####")
-	supp_vec_negative = supp_vec.predict(test_non_patterns)
-	print("Negatives:")
-	print(supp_vec_negative)
-	supp_vec_positive = supp_vec.predict(test_patterns)  
-	print("Positives:")
-	print(supp_vec_positive)
-
-	print("##### GAUSSIAN NAIVE BAYES #####")
-	y_pred_negative = gnb.predict(test_non_patterns)
-	print("Negatives:")
-	print(y_pred_negative)
-	y_pred_positive = gnb.predict(test_patterns)
-	print("Positives:")
-	print(y_pred_positive)
-
-	print("##### RANDOM FOREST #####")
-	y_pred_negative = rand_for.predict(test_non_patterns)
-	print("Negatives:")
-	print(y_pred_negative)
-	y_pred_positive = rand_for.predict(test_patterns)
-	print("Positives:")
-	print(y_pred_positive)
+	MLP = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(10, 10, 10), random_state=1)
+	MLP.fit(X,Y)
 
 
-	print("##### LOGISTIC REGRESSION #####")
-	y_pred_negative = LogReg.predict(test_non_patterns)
-	print("Negatives:")
-	print(y_pred_negative)
-	y_pred_positive = LogReg.predict(test_patterns)
-	print("Positives:")
-	print(y_pred_positive)
+	# print("##### SUPPORT VECTOR MACHINE #####")
+	# supp_vec_negative = supp_vec.predict(test_non_patterns)
+	# print("Negatives:")
+	# print(supp_vec_negative)
+	# supp_vec_positive = supp_vec.predict(test_patterns)  
+	# print("Positives:")
+	# print(supp_vec_positive)
+
+	# print("##### GAUSSIAN NAIVE BAYES #####")
+	# y_pred_negative = gnb.predict(test_non_patterns)
+	# print("Negatives:")
+	# print(y_pred_negative)
+	# y_pred_positive = gnb.predict(test_patterns)
+	# print("Positives:")
+	# print(y_pred_positive)
+
+	# print("##### RANDOM FOREST #####")
+	# y_pred_negative = rand_for.predict(test_non_patterns)
+	# print("Negatives:")
+	# print(y_pred_negative)
+	# y_pred_positive = rand_for.predict(test_patterns)
+	# print("Positives:")
+	# print(y_pred_positive)
+
+
+	# print("##### LOGISTIC REGRESSION #####")
+	# y_pred_negative = LogReg.predict(test_non_patterns)
+	# print("Negatives:")
+	# print(y_pred_negative)
+	# y_pred_positive = LogReg.predict(test_patterns)
+	# print("Positives:")
+	# print(y_pred_positive)
+
+	# print("##### MLP #####")
+	# y_pred_negative = MLP.predict(test_non_patterns)
+	# print(test_non_patterns.shape)
+	# print("Negatives:")
+	# print(y_pred_negative)
+	# y_pred_positive = MLP.predict(test_patterns)
+	# print("Positives:")
+	# print(y_pred_positive)
+
+	if classifier_return_type == 'g':
+		return gnb
+	if classifier_return_type == 's':
+		return supp_vec
+	if classifier_return_type == 'mlp':
+		return MLP
+	return classifer
 
 
 
@@ -619,15 +771,15 @@ def butter_lowpass_filter(data, cutoff, fs, order=5):
 	return y
 
 def butter_highpass(cutoff, fs, order=5):
-    nyq = 0.5 * fs
-    normal_cutoff = cutoff / nyq
-    b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
-    return b, a
+	nyq = 0.5 * fs
+	normal_cutoff = cutoff / nyq
+	b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
+	return b, a
 
 def butter_highpass_filter(data, cutoff, fs, order=5):
-    b, a = butter_highpass(cutoff, fs, order=order)
-    y = signal.filtfilt(b, a, data)
-    return y
+	b, a = butter_highpass(cutoff, fs, order=order)
+	y = signal.filtfilt(b, a, data)
+	return y
 
 def conditional_show():
 	if cond_show:
