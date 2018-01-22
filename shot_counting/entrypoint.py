@@ -12,7 +12,7 @@ classifier_threshold = "dummy"
 
 @app.route('/')
 def hello_world():
-    return('Hello, World!')
+    return('Hello, World!\n')
 
 @app.before_first_request
 def main():
@@ -50,4 +50,4 @@ def test_file():
 	return("Test file has %d shots\n" % shots)
 
 if __name__ == '__main__':
-		main()
+		app.run()
