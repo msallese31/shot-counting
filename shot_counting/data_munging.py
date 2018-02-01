@@ -9,6 +9,7 @@ def mag_from_file(filename):
 	return magnitude(x_data, y_data, z_data)
 
 def magnitude(x_data, y_data, z_data):
+	print(type(x_data))
 	x2 = x_data * x_data
 	y2 = y_data * y_data
 	z2 = z_data * z_data
