@@ -36,7 +36,7 @@ ab -n 10000 -c 100 localhost:12345/
 
 ```
 source setupFlask.sh
-flask run
+flask run --host=192.168.0.179 --port=12345
 ```
 
 #### Make Request

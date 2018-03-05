@@ -16,6 +16,7 @@ def build_prediction_list(mag, classifier):
 	predictions = []
 	indexes = []
 	# print(mag.shape[1])
+	print(mag.shape)
 	while i < mag.shape[1]:
 		if(i + 100 > mag.shape[1]):
 			break
