@@ -1,0 +1,10 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: shot-counter-backend
+spec:
+  selector:
+    app: shot-counter-backend
+  ports:
+  - protocol: TCP
+    port: 5000
