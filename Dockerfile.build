@@ -1,0 +1,23 @@
+FROM google/python  
+
+RUN apt-get update -y
+
+RUN apt-get install -y \  
+    libpng-dev \
+    freetype* \
+    libblas-dev \
+    liblapack-dev \
+    libatlas-base-dev \
+    gfortran
+
+WORKDIR /app  
+ADD requirements.txt /app/requirements.txt  
+RUN virtualenv /env  
+RUN /env/bin/pip install --upgrade pip  
+
+RUN /env/bin/pip install wheel  
+ENV PIP_WHEEL_DIR=/wheelhouse  
+ENV WHEELHOUSE=/wheelhouse  
+ENV PIP_FIND_LINKS=/wheelhouse  
+
+RUN while read p; do /env/bin/pip wheel $p; done < requirements.txt
